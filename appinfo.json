@@ -1,0 +1,19 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "taturou@gmail.com",
+    "longName": "MultiTimer",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "shortName": "MultiTimer",
+    "uuid": "0d3a4c5c-e6e7-4505-b72e-f33ce5bfa74a",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}

@@ -4,12 +4,24 @@
         ""
     ],
     "companyName": "taturou@gmail.com",
-    "longName": "MultiTimer",
+    "longName": "MultiAlarm",
     "projectType": "native",
     "resources": {
-        "media": []
+        "media": [
+            {
+                "file": "images/bell_whilte.png",
+                "name": "BELL_WHITE",
+                "type": "png"
+            },
+            {
+                "file": "images/bell_black.png",
+                "name": "BELL_BLACK",
+                "type": "png"
+            }
+        ]
     },
-    "shortName": "MultiTimer",
+    "sdkVersion": "2",
+    "shortName": "MultiAlarm",
     "uuid": "0d3a4c5c-e6e7-4505-b72e-f33ce5bfa74a",
     "versionCode": 1,
     "versionLabel": "1.0",

@@ -68,13 +68,13 @@ MultiAlarmLayer *multi_alarm_layer_create(GRect frame) {
                 malarm->menu_layer,
                 (void*)malarm,
                 (MenuLayerCallbacks){
-                    .get_num_sections = s_menu_get_num_sections_callback,
-                    .get_num_rows = s_menu_get_num_rows_callback,
-                    .get_cell_height = s_menu_get_cell_hight_callback,
+                    .get_num_sections  = s_menu_get_num_sections_callback,
+                    .get_num_rows      = s_menu_get_num_rows_callback,
+                    .get_cell_height   = s_menu_get_cell_hight_callback,
                     .get_header_height = s_menu_get_header_height_callback,
-                    .draw_row = s_menu_draw_row_callback,
-                    .draw_header = s_menu_draw_header_callback,
-                    .select_click = s_menu_select_click_callback,
+                    .draw_row          = s_menu_draw_row_callback,
+                    .draw_header       = s_menu_draw_header_callback,
+                    .select_click      = s_menu_select_click_callback,
                     .select_long_click = s_menu_select_long_click_callback,
                     .selection_changed = s_menu_changed_callback,});
             
@@ -151,7 +151,22 @@ void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData 
     malarm->data_size = size;
     
     menu_layer_reload_data(malarm->menu_layer);
-    menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, 0}, MenuRowAlignCenter, true);
+    
+    // select near time
+    uint16_t index;
+    time_t old = 0, new;
+
+    for (index = 0; index < size; index++) {
+        new = multi_alarm_data_get_time(&data[index]);
+        if (old > new) {
+            break;
+        }
+        old = new;
+    }
+    if (index == size) {
+        index = 0;
+    }
+    menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
 }
 
 void multi_alarm_layer_update_abouttime(MultiAlarmLayer *malarm) {
@@ -160,6 +175,22 @@ void multi_alarm_layer_update_abouttime(MultiAlarmLayer *malarm) {
     if (cell_index.section == MENU_SECTION_INDEX_TIME) {
         layer_mark_dirty(malarm->abouttime_layer);
     }
+}
+
+time_t multi_alarm_data_get_time(MultiAlarmData *data) {
+    time_t now_time = time(NULL);
+    struct tm now_tm;
+    memcpy(&now_tm, localtime(&now_time), sizeof(struct tm));
+
+    now_tm.tm_hour = data->time.hour;
+    now_tm.tm_min = data->time.min;
+    now_tm.tm_sec = 0;
+
+    time_t data_time = p_mktime(&now_tm);
+    if (data_time < now_time) {
+        data_time += 24 * 60 * 60; // second of 1day
+    }
+    return data_time;
 }
 
 static uint16_t s_menu_get_num_sections_callback(struct MenuLayer *menu_layer, void *callback_context) {
@@ -270,13 +301,8 @@ static void s_menu_data_time_update(const Layer *layer, GContext *ctx, MultiAlar
 }
 
 static void s_menu_data_alarm_update(const Layer *layer, GContext *ctx, MultiAlarmLayer *malarm, uint16_t index) {
-    int key;
+    int key = malarm->data[index].alarm == true ? ICON_KEY_BELL_BLACK : ICON_KEY_BELL_WHITE;
 
-    if (malarm->data[index].alarm == true) {
-        key = ICON_KEY_BELL_BLACK;
-    } else {
-        key = ICON_KEY_BELL_WHITE;
-    }
     graphics_draw_bitmap_in_rect(
         ctx,
         s_icons[key].bitmap,
@@ -298,30 +324,18 @@ static void s_info_abouttime_update(struct Layer *layer, GContext *ctx) {
     if (cell_index.section == MENU_SECTION_INDEX_TIME) {
         uint16_t index = cell_index.row;
 
-        // get UNIX time specified to the selected time
-        time_t now_time = time(NULL);
-        struct tm now_tm;
-        memcpy(&now_tm, localtime(&now_time), sizeof(struct tm));
-
-        now_tm.tm_hour = malarm->data[index].time.hour;
-        now_tm.tm_min = malarm->data[index].time.min;
-        now_tm.tm_sec = 0;
-
-        time_t timer_time = p_mktime(&now_tm);
-        if (timer_time < now_time) {
-            timer_time += 24 * 60 * 60; // second of 1day
-        }
-
         // calc different between now to the selected time
-        uint32_t diff_time = (uint32_t)(timer_time - now_time);
-
-        int hour = diff_time / (60 * 60);
-        int min = (diff_time / 60) % 60;
-        int sec = diff_time % 60;
+        time_t now_time = time(NULL);
+        uint32_t diff_time = (uint32_t)(multi_alarm_data_get_time(&malarm->data[index]) - now_time);
 
         // draw
         char str[16];
-        snprintf(str, 16, "%2d:%02d:%02d", hour, min, sec);
+        snprintf(str,
+                 16,
+                 "%2d:%02d:%02d",
+                 (int)(diff_time / (60 * 60)),
+                 (int)((diff_time / 60) % 60),
+                 (int)(diff_time % 60));
 
         graphics_context_set_text_color(ctx, GColorWhite);
         graphics_draw_text(

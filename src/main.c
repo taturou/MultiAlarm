@@ -6,7 +6,6 @@ static Window *window;
 static MultiAlarmLayer *s_malarm_layer;
 
 static MultiAlarmData s_malarm_data[] = {
-    {{0, 0}, false},
     {{6, 0}, false},
     {{7, 37}, false},
     {{7, 46}, false},
@@ -15,6 +14,7 @@ static MultiAlarmData s_malarm_data[] = {
     {{15, 0}, false},
     {{17, 30}, false},
     {{23, 30}, false},
+    {{23, 50}, false},
     {{0, 0}, false},
 };
 
@@ -30,6 +30,7 @@ void window_load(Window *window) {
     multi_alarm_layer_set_click_config_onto_window(s_malarm_layer, window);
     multi_alarm_layer_add_child_to_layer(s_malarm_layer, window_layer);
     multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data, sizeof(s_malarm_data)/sizeof(MultiAlarmData));
+    
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }
 

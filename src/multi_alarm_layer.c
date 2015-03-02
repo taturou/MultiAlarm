@@ -22,7 +22,7 @@ typedef struct multi_alarm_layer {
     Layer *info_layer;
     Layer *abouttime_layer;
     MultiAlarmData *data;
-    uint8_t data_size;
+    size_t data_size;
 }MultiAlarmLayer;
 
 #define ICON_KEY_BELL_WHITE         (0)
@@ -146,7 +146,7 @@ void multi_alarm_layer_add_child_to_layer(MultiAlarmLayer *malarm, Layer *layer)
     layer_add_child(layer, malarm->info_layer);
 }
 
-void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData *data, uint8_t size) {
+void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData *data, size_t size) {
     malarm->data = data;
     malarm->data_size = size;
     

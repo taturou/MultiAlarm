@@ -16,6 +16,16 @@ static MultiAlarmData s_malarm_data[] = {
     {{23, 30}, false},
     {{23, 50}, false},
     {{0, 0}, false},
+    {{0, 1}, false},
+    {{0, 2}, false},
+    {{0, 3}, false},
+    {{0, 4}, false},
+    {{0, 5}, false},
+    {{0, 6}, false},
+    {{0, 7}, false},
+    {{0, 8}, false},
+    {{0, 9}, false},
+    {{0, 10}, false},
 };
 
 static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {

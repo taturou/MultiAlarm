@@ -51,6 +51,8 @@ static void s_menu_data_alarm_update(const Layer *layer, GContext *ctx, MultiAla
 static void s_info_update(struct Layer *layer, GContext *ctx);
 static void s_info_abouttime_update(struct Layer *layer, GContext *ctx);
 
+static int s_data_cmp(const void *a, const void *b);
+
 static bool s_icons_init();
 static void s_icons_finalize();
 
@@ -150,6 +152,10 @@ void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData 
     malarm->data = data;
     malarm->data_size = size;
     
+    // sort data from 00:00 to 23:59
+    qsort(data, size, sizeof(MultiAlarmData), s_data_cmp);
+    
+    // reset menu
     menu_layer_reload_data(malarm->menu_layer);
     
     // select near time
@@ -157,7 +163,7 @@ void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData 
     time_t old = 0, new;
 
     for (index = 0; index < size; index++) {
-        new = multi_alarm_data_get_time(&data[index]);
+        new = multi_alarm_data_get_time(&data[index], false);
         if (old > new) {
             break;
         }
@@ -177,7 +183,7 @@ void multi_alarm_layer_update_abouttime(MultiAlarmLayer *malarm) {
     }
 }
 
-time_t multi_alarm_data_get_time(MultiAlarmData *data) {
+time_t multi_alarm_data_get_time(MultiAlarmData *data, bool today_only) {
     time_t now_time = time(NULL);
     struct tm now_tm;
     memcpy(&now_tm, localtime(&now_time), sizeof(struct tm));
@@ -187,8 +193,10 @@ time_t multi_alarm_data_get_time(MultiAlarmData *data) {
     now_tm.tm_sec = 0;
 
     time_t data_time = p_mktime(&now_tm);
-    if (data_time < now_time) {
-        data_time += 24 * 60 * 60; // second of 1day
+    if (today_only == false) {
+        if (data_time < now_time) {
+            data_time += 24 * 60 * 60; // second of 1day
+        }
     }
     return data_time;
 }
@@ -326,8 +334,7 @@ static void s_info_abouttime_update(struct Layer *layer, GContext *ctx) {
 
         // calc different between now to the selected time
         time_t now_time = time(NULL);
-        uint32_t diff_time = (uint32_t)(multi_alarm_data_get_time(&malarm->data[index]) - now_time);
-
+        uint32_t diff_time = (uint32_t)(multi_alarm_data_get_time(&malarm->data[index], false) - now_time);
         // draw
         char str[16];
         snprintf(str,
@@ -347,6 +354,10 @@ static void s_info_abouttime_update(struct Layer *layer, GContext *ctx) {
             GTextAlignmentRight,
             NULL);
     }
+}
+
+static int s_data_cmp(const void *a, const void *b) {
+    return (int)(multi_alarm_data_get_time((MultiAlarmData*)a, true) - multi_alarm_data_get_time((MultiAlarmData*)b, true));
 }
 
 static bool s_icons_init() {

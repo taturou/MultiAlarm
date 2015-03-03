@@ -160,7 +160,7 @@ long int strtol(const char *nptr, char **endptr, int base) {
  * (And this is the worst case if you own 4GB and sort an array of chars.)
  * Sparing the function calling overhead does improve performance, too.
  */
-void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *a, const void *b)) {
+void qsort_r(void *base, size_t nmemb, size_t size, int (*compar)(const void *d1, const void *d2, void *arg), void *arg) {
     char *base2 = (char *)base;
     size_t i, a, b, c;
 
@@ -169,10 +169,10 @@ void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *a, c
         b = nmemb - 1;
         c = (a + b) / 2; /* Middle element */
         while (1) {
-            while ((*compar)(&base2[size*c], &base2[size*a]) > 0) {
+            while ((*compar)(&base2[size*c], &base2[size*a], arg) > 0) {
                 a++; /* Look for one >= middle */
             }
-            while ((*compar)(&base2[size*c], &base2[size*b]) < 0) {
+            while ((*compar)(&base2[size*c], &base2[size*b], arg) < 0) {
                 b--; /* Look for one <= middle */
             }
             if (a >= b) {
@@ -194,13 +194,24 @@ void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *a, c
         } /* a points to first element of right interval now (b to last of left) */
         b++;
         if (b < nmemb-b) { /* do recursion on smaller interval and iteration on larger one */
-            qsort(base2, b, size, compar);
+            qsort_r(base2, b, size, compar, arg);
             base2 = &base2[size*b];
             nmemb = nmemb-b;
         } else {
-            qsort(&base2[size*b], nmemb - b, size, compar);
+            qsort_r(&base2[size*b], nmemb - b, size, compar, arg);
             nmemb = b;
         }
     }
     return;
+}
+
+typedef int (*qsort_compar_fn)(const void *d1, const void *d2);
+
+static int qsort_compar(const void *d1, const void *d2, void *arg) {
+    qsort_compar_fn cmp = (qsort_compar_fn)arg;
+    return cmp(d1, d2);    
+}
+
+void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *d1, const void *d2)) {
+    qsort_r(base, nmemb, size, qsort_compar, (void*)compar);
 }

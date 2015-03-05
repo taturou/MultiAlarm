@@ -3,8 +3,10 @@
 
 typedef struct multi_alarm_data MultiAlarmData;
 
-typedef int err_t;
+typedef int err_t;       // 0:Success, -1:Error
+
 typedef size_t index_t;
+#define INVALID_INDEX    ((index_t)(-1))
 
 typedef struct multi_alarm_time {
     uint8_t hour;

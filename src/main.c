@@ -8,6 +8,10 @@ static MultiAlarmLayer *s_malarm_layer;
 static MultiAlarmData *s_malarm_data;
 #define MAX_DATA    (50)
 
+static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
+    vibes_short_pulse();
+}
+
 static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {
     multi_alarm_layer_update_abouttime(s_malarm_layer);
 }
@@ -38,6 +42,7 @@ void window_load(Window *window) {
     multi_alarm_layer_set_click_config_onto_window(s_malarm_layer, window);
     multi_alarm_layer_add_child_to_layer(s_malarm_layer, window_layer);
     multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
+    multi_alarm_layer_select_long_click_subscribe(s_malarm_layer, s_multi_alarm_select_callback);
     
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }

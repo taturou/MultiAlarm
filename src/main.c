@@ -1,42 +1,12 @@
 #include "pebble.h"
 #include "PDUtils.h"
 #include "multi_alarm_layer.h"
+#include "multi_alarm_data.h"
 
 static Window *window;
 static MultiAlarmLayer *s_malarm_layer;
-
-static MultiAlarmData s_malarm_data[] = {
-    {{6, 0}, false},
-    {{7, 37}, false},
-    {{7, 46}, false},
-    {{7, 52}, false},
-    {{8, 0}, false},
-    {{9, 0}, false},
-    {{10, 0}, false},
-    {{11, 0}, false},
-    {{12, 0}, false},
-    {{13, 0}, false},
-    {{14, 0}, false},
-    {{15, 0}, false},
-    {{15, 0}, false},
-    {{16, 0}, false},
-    {{17, 0}, false},
-    {{17, 30}, false},
-    {{18, 0}, false},
-    {{19, 0}, false},
-    {{20, 0}, false},
-    {{21, 0}, false},
-    {{22, 0}, false},
-    {{23, 0}, false},
-    {{23, 30}, false},
-    {{0, 0}, false},
-    {{1, 0}, false},
-    {{2, 0}, false},
-    {{3, 0}, false},
-    {{4, 0}, false},
-    {{5, 0}, false},
-};
-static MultiAlarmPod s_malarm_pod = {s_malarm_data, sizeof(s_malarm_data)/sizeof(MultiAlarmData)};
+static MultiAlarmData *s_malarm_data;
+#define MAX_DATA    (50)
 
 static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {
     multi_alarm_layer_update_abouttime(s_malarm_layer);
@@ -46,16 +16,35 @@ void window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
     GRect window_frame = layer_get_frame(window_layer);
 
+    s_malarm_data = multi_alarmm_data_create(MAX_DATA);
+    {
+        index_t index = 0;
+        MATime data[] = {
+            {0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0},
+            {6, 0}, {8, 0}, {9, 0}, {10, 0}, {11, 0}, {12, 0},
+            {13, 0}, {14, 0}, {15, 0}, {16, 0}, {17, 0}, {18, 0},
+            {19, 0}, {20, 0}, {21, 0}, {22, 0}, {23, 0},
+            {7, 37}, {7, 46}, {7, 52}, {17, 30}, {23, 30}, {23, 35}
+        };
+
+        for (index_t i = 0; i < (sizeof(data)/sizeof(MATime)); i++) {
+            (void)multi_alarm_data_add(s_malarm_data, &index);
+            (void)multi_alarm_data_set_MATime(s_malarm_data, index, data[i]);
+        }
+        multi_alarm_data_sort_by_ascending_order(s_malarm_data);
+    }
+
     s_malarm_layer = multi_alarm_layer_create(window_frame);
     multi_alarm_layer_set_click_config_onto_window(s_malarm_layer, window);
     multi_alarm_layer_add_child_to_layer(s_malarm_layer, window_layer);
-    multi_alarm_layer_set_data_pointer(s_malarm_layer, &s_malarm_pod);
+    multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
     
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }
 
 void window_unload(Window *window) {
     multi_alarm_layer_destroy(s_malarm_layer);
+    multi_alarm_data_destory(s_malarm_data);
 }
 
 int main(void) {

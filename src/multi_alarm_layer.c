@@ -20,7 +20,7 @@ typedef struct multi_alarm_layer {
     MenuLayer *menu_layer;
     Layer *info_layer;
     Layer *abouttime_layer;
-    MultiAlarmPod *pod;
+    MultiAlarmData *data;
 }MultiAlarmLayer;
 
 #define ICON_KEY_BELL_WHITE         (0)
@@ -48,8 +48,6 @@ static void s_menu_data_time_update(const Layer *layer, GContext *ctx, MultiAlar
 static void s_menu_data_alarm_update(const Layer *layer, GContext *ctx, MultiAlarmLayer *malarm, uint16_t index);
 static void s_info_update(struct Layer *layer, GContext *ctx);
 static void s_info_abouttime_update(struct Layer *layer, GContext *ctx);
-
-static int s_data_cmp(const void *a, const void *b);
 
 static bool s_icons_init();
 static void s_icons_finalize();
@@ -146,27 +144,26 @@ void multi_alarm_layer_add_child_to_layer(MultiAlarmLayer *malarm, Layer *layer)
     layer_add_child(layer, malarm->info_layer);
 }
 
-void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmPod *pod) {
-    malarm->pod = pod;
-    
-    // sort data from 00:00 to 23:59
-    qsort(pod->data, pod->num_data, sizeof(MultiAlarmData), s_data_cmp);
+void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData *data) {
+    malarm->data = data;
     
     // reset menu
     menu_layer_reload_data(malarm->menu_layer);
     
     // select near time
-    uint16_t index;
+    index_t index;
+    size_t num_usable = multi_alarm_data_get_num_usable(data);
     time_t old = 0, new;
 
-    for (index = 0; index < pod->num_data; index++) {
-        new = multi_alarm_data_get_time(&pod->data[index], false);
-        if (old > new) {
-            break;
+    for (index = 0; index < num_usable; index++) {
+        if (multi_alarm_data_get_time_t_of_after24h(data, index, &new) == 0) {
+            if (old > new) {
+                break;
+            }
+            old = new;
         }
-        old = new;
     }
-    if (index == pod->num_data) {
+    if (index == num_usable) {
         index = 0;
     }
     menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
@@ -191,7 +188,7 @@ static uint16_t s_menu_get_num_rows_callback(struct MenuLayer *menu_layer, uint1
     (void)menu_layer;
     MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
     uint16_t num_rows[] = {
-        malarm->pod->num_data,
+        multi_alarm_data_get_num_usable(malarm->data),
         MENU_NUM_ROWS_OF_SETTING
     };
     
@@ -248,8 +245,12 @@ static void s_menu_select_click_callback(struct MenuLayer *menu_layer, MenuIndex
     MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
 
     if (cell_index->section == MENU_SECTION_INDEX_TIME) {
-        malarm->pod->data[cell_index->row].alarm = malarm->pod->data[cell_index->row].alarm == true ? false : true;
-        layer_mark_dirty(malarm->info_layer);
+        bool enable;
+
+        if (multi_alarm_data_get_alarm_enable(malarm->data, cell_index->row, &enable) == 0) {
+            (void)multi_alarm_data_set_alarm_enable(malarm->data, cell_index->row, enable == true ? false : true);
+            layer_mark_dirty(malarm->info_layer);
+        }
     }
 }
 
@@ -270,32 +271,39 @@ static void s_menu_changed_callback(struct MenuLayer *menu_layer, MenuIndex new_
 
 static void s_menu_data_time_update(const Layer *layer, GContext *ctx, MultiAlarmLayer *malarm, uint16_t index) {
     (void)layer;
-
+    MATime time;
     char str[6];
-    snprintf(str, 6, "%2d:%02d", malarm->pod->data[index].time.hour, malarm->pod->data[index].time.min);
 
-    graphics_context_set_text_color(ctx, GColorBlack);
-    graphics_draw_text(
-        ctx,
-        str,
-        fonts_get_system_font(FONT_KEY_GOTHIC_18),
-        (GRect){
-            .origin = {0, (MENU_CELL_HIGHT_TIME / 2) - (18 / 2) - INFO_TIME_MARGIN_Y},
-            .size = {MENU_BOUNDS_SIZE_WIDTH - INFO_TIME_MARGIN_X, 18}},
-        GTextOverflowModeWordWrap,
-        GTextAlignmentRight,
-        NULL);
+    if (multi_alarm_data_get_MATime(malarm->data, index, &time) == 0) {
+        snprintf(str, 6, "%2d:%02d", time.hour, time.min);
+    
+        graphics_context_set_text_color(ctx, GColorBlack);
+        graphics_draw_text(
+            ctx,
+            str,
+            fonts_get_system_font(FONT_KEY_GOTHIC_18),
+            (GRect){
+                .origin = {0, (MENU_CELL_HIGHT_TIME / 2) - (18 / 2) - INFO_TIME_MARGIN_Y},
+                .size = {MENU_BOUNDS_SIZE_WIDTH - INFO_TIME_MARGIN_X, 18}},
+            GTextOverflowModeWordWrap,
+            GTextAlignmentRight,
+            NULL);
+    }
 }
 
 static void s_menu_data_alarm_update(const Layer *layer, GContext *ctx, MultiAlarmLayer *malarm, uint16_t index) {
-    int key = malarm->pod->data[index].alarm == true ? ICON_KEY_BELL_BLACK : ICON_KEY_BELL_WHITE;
+    bool enable;
 
-    graphics_draw_bitmap_in_rect(
-        ctx,
-        s_icons[key].bitmap,
-        (GRect){
-            .origin = {INFO_ALARM_ORIGIN_X, (MENU_CELL_HIGHT_TIME / 2) - (s_icons[key].bitmap->bounds.size.h / 2)},
-            .size = s_icons[key].bitmap->bounds.size});
+    if (multi_alarm_data_get_alarm_enable(malarm->data, index, &enable) == 0) {
+        int key = enable == true ? ICON_KEY_BELL_BLACK : ICON_KEY_BELL_WHITE;
+    
+        graphics_draw_bitmap_in_rect(
+            ctx,
+            s_icons[key].bitmap,
+            (GRect){
+                .origin = {INFO_ALARM_ORIGIN_X, (MENU_CELL_HIGHT_TIME / 2) - (s_icons[key].bitmap->bounds.size.h / 2)},
+                .size = s_icons[key].bitmap->bounds.size});
+    }
 }
 
 static void s_info_update(struct Layer *layer, GContext *ctx) {
@@ -312,31 +320,30 @@ static void s_info_abouttime_update(struct Layer *layer, GContext *ctx) {
         uint16_t index = cell_index.row;
 
         // calc different between now to the selected time
-        time_t now_time = time(NULL);
-        uint32_t diff_time = (uint32_t)(multi_alarm_data_get_time(&malarm->pod->data[index], false) - now_time);
-        // draw
-        char str[16];
-        snprintf(str,
-                 16,
-                 "%2d:%02d:%02d",
-                 (int)(diff_time / (60 * 60)),
-                 (int)((diff_time / 60) % 60),
-                 (int)(diff_time % 60));
-
-        graphics_context_set_text_color(ctx, GColorWhite);
-        graphics_draw_text(
-            ctx,
-            str,
-            fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
-            layer_get_bounds(layer),
-            GTextOverflowModeWordWrap,
-            GTextAlignmentRight,
-            NULL);
+        time_t set_time;
+        if (multi_alarm_data_get_time_t_of_after24h(malarm->data, index, &set_time) == 0) {
+            uint32_t diff_time = (uint32_t)(set_time - time(NULL));
+    
+            // draw
+            char str[16];
+            snprintf(str,
+                     16,
+                     "%2d:%02d:%02d",
+                     (int)(diff_time / (60 * 60)),
+                     (int)((diff_time / 60) % 60),
+                     (int)(diff_time % 60));
+    
+            graphics_context_set_text_color(ctx, GColorWhite);
+            graphics_draw_text(
+                ctx,
+                str,
+                fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
+                layer_get_bounds(layer),
+                GTextOverflowModeWordWrap,
+                GTextAlignmentRight,
+                NULL);
+        }
     }
-}
-
-static int s_data_cmp(const void *a, const void *b) {
-    return (int)(multi_alarm_data_get_time((MultiAlarmData*)a, true) - multi_alarm_data_get_time((MultiAlarmData*)b, true));
 }
 
 static bool s_icons_init() {

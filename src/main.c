@@ -36,6 +36,7 @@ static MultiAlarmData s_malarm_data[] = {
     {{4, 0}, false},
     {{5, 0}, false},
 };
+static MultiAlarmPod s_malarm_pod = {s_malarm_data, sizeof(s_malarm_data)/sizeof(MultiAlarmData)};
 
 static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {
     multi_alarm_layer_update_abouttime(s_malarm_layer);
@@ -48,7 +49,7 @@ void window_load(Window *window) {
     s_malarm_layer = multi_alarm_layer_create(window_frame);
     multi_alarm_layer_set_click_config_onto_window(s_malarm_layer, window);
     multi_alarm_layer_add_child_to_layer(s_malarm_layer, window_layer);
-    multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data, sizeof(s_malarm_data)/sizeof(MultiAlarmData));
+    multi_alarm_layer_set_data_pointer(s_malarm_layer, &s_malarm_pod);
     
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }

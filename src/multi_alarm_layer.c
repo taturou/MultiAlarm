@@ -1,6 +1,5 @@
 #include <pebble.h>
 #include "multi_alarm_layer.h"
-#include "PDUtils.h"
 
 #define MENU_NUM_SECTIONS           (2)    // 0:time, 1:setting
 #define MENU_SECTION_INDEX_TIME     (0)
@@ -21,8 +20,7 @@ typedef struct multi_alarm_layer {
     MenuLayer *menu_layer;
     Layer *info_layer;
     Layer *abouttime_layer;
-    MultiAlarmData *data;
-    size_t data_size;
+    MultiAlarmPod *pod;
 }MultiAlarmLayer;
 
 #define ICON_KEY_BELL_WHITE         (0)
@@ -148,12 +146,11 @@ void multi_alarm_layer_add_child_to_layer(MultiAlarmLayer *malarm, Layer *layer)
     layer_add_child(layer, malarm->info_layer);
 }
 
-void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData *data, size_t size) {
-    malarm->data = data;
-    malarm->data_size = size;
+void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmPod *pod) {
+    malarm->pod = pod;
     
     // sort data from 00:00 to 23:59
-    qsort(data, size, sizeof(MultiAlarmData), s_data_cmp);
+    qsort(pod->data, pod->num_data, sizeof(MultiAlarmData), s_data_cmp);
     
     // reset menu
     menu_layer_reload_data(malarm->menu_layer);
@@ -162,14 +159,14 @@ void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData 
     uint16_t index;
     time_t old = 0, new;
 
-    for (index = 0; index < size; index++) {
-        new = multi_alarm_data_get_time(&data[index], false);
+    for (index = 0; index < pod->num_data; index++) {
+        new = multi_alarm_data_get_time(&pod->data[index], false);
         if (old > new) {
             break;
         }
         old = new;
     }
-    if (index == size) {
+    if (index == pod->num_data) {
         index = 0;
     }
     menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
@@ -183,24 +180,6 @@ void multi_alarm_layer_update_abouttime(MultiAlarmLayer *malarm) {
     }
 }
 
-time_t multi_alarm_data_get_time(MultiAlarmData *data, bool today_only) {
-    time_t now_time = time(NULL);
-    struct tm now_tm;
-    memcpy(&now_tm, localtime(&now_time), sizeof(struct tm));
-
-    now_tm.tm_hour = data->time.hour;
-    now_tm.tm_min = data->time.min;
-    now_tm.tm_sec = 0;
-
-    time_t data_time = p_mktime(&now_tm);
-    if (today_only == false) {
-        if (data_time < now_time) {
-            data_time += 24 * 60 * 60; // second of 1day
-        }
-    }
-    return data_time;
-}
-
 static uint16_t s_menu_get_num_sections_callback(struct MenuLayer *menu_layer, void *callback_context) {
     (void)menu_layer;
     (void)callback_context;
@@ -212,7 +191,7 @@ static uint16_t s_menu_get_num_rows_callback(struct MenuLayer *menu_layer, uint1
     (void)menu_layer;
     MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
     uint16_t num_rows[] = {
-        malarm->data_size,
+        malarm->pod->num_data,
         MENU_NUM_ROWS_OF_SETTING
     };
     
@@ -269,7 +248,7 @@ static void s_menu_select_click_callback(struct MenuLayer *menu_layer, MenuIndex
     MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
 
     if (cell_index->section == MENU_SECTION_INDEX_TIME) {
-        malarm->data[cell_index->row].alarm = malarm->data[cell_index->row].alarm == true ? false : true;
+        malarm->pod->data[cell_index->row].alarm = malarm->pod->data[cell_index->row].alarm == true ? false : true;
         layer_mark_dirty(malarm->info_layer);
     }
 }
@@ -293,7 +272,7 @@ static void s_menu_data_time_update(const Layer *layer, GContext *ctx, MultiAlar
     (void)layer;
 
     char str[6];
-    snprintf(str, 6, "%2d:%02d", malarm->data[index].time.hour, malarm->data[index].time.min);
+    snprintf(str, 6, "%2d:%02d", malarm->pod->data[index].time.hour, malarm->pod->data[index].time.min);
 
     graphics_context_set_text_color(ctx, GColorBlack);
     graphics_draw_text(
@@ -309,7 +288,7 @@ static void s_menu_data_time_update(const Layer *layer, GContext *ctx, MultiAlar
 }
 
 static void s_menu_data_alarm_update(const Layer *layer, GContext *ctx, MultiAlarmLayer *malarm, uint16_t index) {
-    int key = malarm->data[index].alarm == true ? ICON_KEY_BELL_BLACK : ICON_KEY_BELL_WHITE;
+    int key = malarm->pod->data[index].alarm == true ? ICON_KEY_BELL_BLACK : ICON_KEY_BELL_WHITE;
 
     graphics_draw_bitmap_in_rect(
         ctx,
@@ -334,7 +313,7 @@ static void s_info_abouttime_update(struct Layer *layer, GContext *ctx) {
 
         // calc different between now to the selected time
         time_t now_time = time(NULL);
-        uint32_t diff_time = (uint32_t)(multi_alarm_data_get_time(&malarm->data[index], false) - now_time);
+        uint32_t diff_time = (uint32_t)(multi_alarm_data_get_time(&malarm->pod->data[index], false) - now_time);
         // draw
         char str[16];
         snprintf(str,

@@ -152,20 +152,18 @@ void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData 
     menu_layer_reload_data(malarm->menu_layer);
     
     // select near time
-    index_t index;
+    index_t index = 0;
     size_t num_usable = multi_alarm_data_get_num_usable(data);
     time_t old = 0, new;
 
-    for (index = 0; index < num_usable; index++) {
-        if (multi_alarm_data_get_time_t_of_after24h(data, index, &new) == 0) {
+    for (index_t i = 0; i < num_usable; i++) {
+        if (multi_alarm_data_get_time_t_of_after24h(data, i, &new) == 0) {
             if (old > new) {
+                index = i;
                 break;
             }
             old = new;
         }
-    }
-    if (index == num_usable) {
-        index = 0;
     }
     menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
 }
@@ -233,7 +231,21 @@ static void s_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, Men
         s_menu_data_time_update(cell_layer, ctx, malarm, index);
         s_menu_data_alarm_update(cell_layer, ctx, malarm, index);
     } else {
-        menu_cell_title_draw(ctx, cell_layer, "New");
+        GPoint center = (GPoint){MENU_BOUNDS_SIZE_WIDTH / 2, MENU_CELL_HIGHT_SETTING / 2};
+
+        graphics_context_set_fill_color(ctx, GColorBlack);
+        graphics_fill_rect(ctx,
+                           (GRect){.origin = {center.x - 8, center.y - 8}, .size = {17, 17}},
+                           0,
+                           GCornerNone);
+        
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_draw_line(ctx,
+                           (GPoint){center.x, center.y - 4},
+                           (GPoint){center.x, center.y + 4});
+        graphics_draw_line(ctx,
+                           (GPoint){center.x - 4, center.y},
+                           (GPoint){center.x + 4, center.y});
     }
 }
 

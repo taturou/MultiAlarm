@@ -3,7 +3,7 @@
 #include "multi_alarm_layer.h"
 #include "multi_alarm_data.h"
 
-static Window *window;
+static Window *s_window;
 static MultiAlarmLayer *s_malarm_layer;
 static MultiAlarmData *s_malarm_data;
 #define MAX_DATA    (50)
@@ -53,14 +53,15 @@ void window_unload(Window *window) {
 }
 
 int main(void) {
-    window = window_create();
+    s_window = window_create();
+    window_set_fullscreen(s_window, true);
 
-    window_set_window_handlers(window, (WindowHandlers) {
+    window_set_window_handlers(s_window, (WindowHandlers) {
         .load = window_load,
         .unload = window_unload,
     });
 
-    window_stack_push(window, true /* Animated */);
+    window_stack_push(s_window, true /* Animated */);
     app_event_loop();
-    window_destroy(window);
+    window_destroy(s_window);
 }

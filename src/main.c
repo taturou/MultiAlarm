@@ -2,11 +2,18 @@
 #include "PDUtils.h"
 #include "multi_alarm_layer.h"
 #include "multi_alarm_data.h"
+#include "select_menu.h"
 
 static Window *s_window;
 static MultiAlarmLayer *s_malarm_layer;
 static MultiAlarmData *s_malarm_data;
+static SelectMenu *s_select_menu;
+
 #define MAX_DATA    (50)
+
+static void s_select_menu_select_callback(SelectMenuElement element) {
+    vibes_short_pulse();
+}
 
 static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
     if (index == MA_INDEX_INVALID) {
@@ -16,11 +23,7 @@ static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
     
 static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t index) {
     if (index != MA_INDEX_INVALID) {
-        vibes_short_pulse();
-        multi_alarm_data_delete(data, index);
-        multi_alarm_data_sort_by_ascending_order(data);
-        multi_alarm_layer_set_data_pointer(s_malarm_layer, data);
-        multi_alarm_layer_set_data_index(s_malarm_layer, index == 0 ? 0 : (index - 1));
+        select_menu_show(s_select_menu, s_select_menu_select_callback);
     }
 }
 
@@ -57,11 +60,14 @@ void window_load(Window *window) {
     multi_alarm_layer_select_long_click_subscribe(s_malarm_layer, s_multi_alarm_long_select_callback);
     multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
     multi_alarm_layer_set_data_index(s_malarm_layer, MA_INDEX_NEAR_NOW_TIME);
-    
+
+    s_select_menu = select_menu_create();
+
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }
 
 void window_unload(Window *window) {
+    select_menu_destroy(s_select_menu);
     multi_alarm_layer_destroy(s_malarm_layer);
     multi_alarm_data_destory(s_malarm_data);
 }

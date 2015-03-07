@@ -21,7 +21,8 @@ typedef struct multi_alarm_layer {
     Layer *info_layer;
     Layer *abouttime_layer;
     MultiAlarmData *data;
-    MultiAlarmLayerSelectCallback select_handler;
+    MultiAlarmLayerClickCallback select_handler;
+    MultiAlarmLayerClickCallback long_select_handler;
 }MultiAlarmLayer;
 
 #define ICON_KEY_BELL_WHITE         (0)
@@ -170,8 +171,12 @@ void multi_alarm_layer_update_abouttime(MultiAlarmLayer *malarm) {
     }
 }
 
-void multi_alarm_layer_select_long_click_subscribe(MultiAlarmLayer *malarm, MultiAlarmLayerSelectCallback handler) {
+void multi_alarm_layer_select_click_subscribe(MultiAlarmLayer *malarm, MultiAlarmLayerClickCallback handler) {
     malarm->select_handler = handler;
+}
+
+void multi_alarm_layer_select_long_click_subscribe(MultiAlarmLayer *malarm, MultiAlarmLayerClickCallback handler) {
+    malarm->long_select_handler = handler;
 }
 
 static uint16_t s_menu_get_num_sections_callback(struct MenuLayer *menu_layer, void *callback_context) {
@@ -263,16 +268,24 @@ static void s_menu_select_click_callback(struct MenuLayer *menu_layer, MenuIndex
             layer_mark_dirty(malarm->info_layer);
         }
     }
-}
-
-static void s_menu_select_long_click_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
-    MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
 
     if (malarm->select_handler != NULL) {
         if (cell_index->section == MENU_SECTION_INDEX_TIME) {
             (*malarm->select_handler)(malarm->data, cell_index->row);
         } else {
-            (*malarm->select_handler)(malarm->data, INVALID_INDEX);
+            (*malarm->select_handler)(malarm->data, MA_INDEX_INVALID);
+        }
+    }
+}
+
+static void s_menu_select_long_click_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+    MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
+
+    if (malarm->long_select_handler != NULL) {
+        if (cell_index->section == MENU_SECTION_INDEX_TIME) {
+            (*malarm->long_select_handler)(malarm->data, cell_index->row);
+        } else {
+            (*malarm->long_select_handler)(malarm->data, MA_INDEX_INVALID);
         }
     }
 }

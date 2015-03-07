@@ -9,10 +9,19 @@ static MultiAlarmData *s_malarm_data;
 #define MAX_DATA    (50)
 
 static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
-    vibes_short_pulse();
-    multi_alarm_data_delete(data, index);
-    multi_alarm_data_sort_by_ascending_order(data);
-    multi_alarm_layer_set_data_pointer(s_malarm_layer, data);
+    if (index == MA_INDEX_INVALID) {
+        vibes_short_pulse();
+    }
+}
+    
+static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t index) {
+    if (index != MA_INDEX_INVALID) {
+        vibes_short_pulse();
+        multi_alarm_data_delete(data, index);
+        multi_alarm_data_sort_by_ascending_order(data);
+        multi_alarm_layer_set_data_pointer(s_malarm_layer, data);
+        multi_alarm_layer_set_data_index(s_malarm_layer, index == 0 ? 0 : (index - 1));
+    }
 }
 
 static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {
@@ -44,7 +53,8 @@ void window_load(Window *window) {
     s_malarm_layer = multi_alarm_layer_create(window_frame);
     multi_alarm_layer_set_click_config_onto_window(s_malarm_layer, window);
     multi_alarm_layer_add_child_to_layer(s_malarm_layer, window_layer);
-    multi_alarm_layer_select_long_click_subscribe(s_malarm_layer, s_multi_alarm_select_callback);
+    multi_alarm_layer_select_click_subscribe(s_malarm_layer, s_multi_alarm_select_callback);
+    multi_alarm_layer_select_long_click_subscribe(s_malarm_layer, s_multi_alarm_long_select_callback);
     multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
     multi_alarm_layer_set_data_index(s_malarm_layer, MA_INDEX_NEAR_NOW_TIME);
     

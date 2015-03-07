@@ -6,7 +6,8 @@ typedef struct multi_alarm_data MultiAlarmData;
 typedef int err_t;       // 0:Success, -1:Error
 
 typedef size_t index_t;
-#define INVALID_INDEX    ((index_t)(-1))
+#define MA_INDEX_NEAR_NOW_TIME  ((index_t)(-2))
+#define MA_INDEX_INVALID        ((index_t)(-1))
 
 typedef struct multi_alarm_time {
     uint8_t hour;
@@ -27,3 +28,4 @@ err_t multi_alarm_data_get_MATime(const MultiAlarmData *data, index_t index, MAT
 err_t multi_alarm_data_set_MATime(MultiAlarmData *data, index_t index, MATime tim);
 err_t multi_alarm_data_get_alarm_enable(const MultiAlarmData *data, index_t index, bool *enable);
 err_t multi_alarm_data_set_alarm_enable(MultiAlarmData *data, index_t index, bool enable);
+index_t multi_alarm_data_get_index_near_now(const MultiAlarmData *data);

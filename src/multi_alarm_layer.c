@@ -147,22 +147,16 @@ void multi_alarm_layer_add_child_to_layer(MultiAlarmLayer *malarm, Layer *layer)
 
 void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData *data) {
     malarm->data = data;
-    
-    // reset menu
     menu_layer_reload_data(malarm->menu_layer);
-    
-    // select near time
-    index_t index = 0;
-    size_t num_usable = multi_alarm_data_get_num_usable(data);
-    time_t old = 0, new;
+    menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, 0}, MenuRowAlignCenter, true);
+}
 
-    for (index_t i = 0; i < num_usable; i++) {
-        if (multi_alarm_data_get_time_t_of_after24h(data, i, &new) == 0) {
-            if (old > new) {
-                index = i;
-                break;
-            }
-            old = new;
+void multi_alarm_layer_set_data_index(MultiAlarmLayer *malarm, index_t index) {
+    if (index == MA_INDEX_NEAR_NOW_TIME) {
+         index = multi_alarm_data_get_index_near_now(malarm->data);
+    } else {
+        if (multi_alarm_data_get_num_usable(malarm->data) <= index) {
+            index = 0;
         }
     }
     menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);

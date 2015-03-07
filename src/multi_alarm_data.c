@@ -142,6 +142,23 @@ err_t multi_alarm_data_set_alarm_enable(MultiAlarmData *data, index_t index, boo
     return element != NULL ? 0 : -1;
 }
 
+index_t multi_alarm_data_get_index_near_now(const MultiAlarmData *data) {
+    index_t index = 0;
+    size_t num_usable = multi_alarm_data_get_num_usable(data);
+    time_t old = 0, new;
+
+    for (index_t i = 0; i < num_usable; i++) {
+        if (multi_alarm_data_get_time_t_of_after24h(data, i, &new) == 0) {
+            if (old > new) {
+                index = i;
+                break;
+            }
+            old = new;
+        }
+    }
+    return index;
+}
+
 static err_t s_data_get_unusable_index(const MultiAlarmData *data, index_t *index) {
     err_t err = -1;
 

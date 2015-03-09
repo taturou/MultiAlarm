@@ -146,6 +146,10 @@ void multi_alarm_layer_add_child_to_layer(MultiAlarmLayer *malarm, Layer *layer)
     layer_add_child(layer, malarm->info_layer);
 }
 
+void multi_alarm_layer_mark_dirty(MultiAlarmLayer *malarm) {
+    layer_mark_dirty(menu_layer_get_layer(malarm->menu_layer));
+}
+
 void multi_alarm_layer_set_data_pointer(MultiAlarmLayer *malarm, MultiAlarmData *data) {
     malarm->data = data;
     menu_layer_reload_data(malarm->menu_layer);
@@ -158,6 +162,21 @@ void multi_alarm_layer_set_data_index(MultiAlarmLayer *malarm, index_t index) {
     } else {
         if (multi_alarm_data_get_num_usable(malarm->data) <= index) {
             index = 0;
+        }
+    }
+    menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
+}
+
+void multi_alarm_layer_set_data_index_correspond_to_time(MultiAlarmLayer *malarm, MATime tim) {
+    index_t index = 0;
+    MATime tim_of_index;
+
+    for (index_t i = 0; i < multi_alarm_data_get_num_usable(malarm->data); i++) {
+        if (multi_alarm_data_get_MATime(malarm->data, i, &tim_of_index) == 0) {
+            if (MATimeEq(tim, tim_of_index)) {
+                index = i;
+                break;
+            }
         }
     }
     menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
@@ -257,17 +276,7 @@ static void s_menu_draw_header_callback(GContext *ctx, const Layer *cell_layer, 
 
 static void s_menu_select_click_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
     (void)menu_layer;
-    (void)cell_index;
     MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
-
-    if (cell_index->section == MENU_SECTION_INDEX_TIME) {
-        bool enable;
-
-        if (multi_alarm_data_get_alarm_enable(malarm->data, cell_index->row, &enable) == 0) {
-            (void)multi_alarm_data_set_alarm_enable(malarm->data, cell_index->row, enable == true ? false : true);
-            layer_mark_dirty(malarm->info_layer);
-        }
-    }
 
     if (malarm->select_handler != NULL) {
         if (cell_index->section == MENU_SECTION_INDEX_TIME) {
@@ -279,6 +288,7 @@ static void s_menu_select_click_callback(struct MenuLayer *menu_layer, MenuIndex
 }
 
 static void s_menu_select_long_click_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+    (void)menu_layer;
     MultiAlarmLayer *malarm = (MultiAlarmLayer*)callback_context;
 
     if (malarm->long_select_handler != NULL) {

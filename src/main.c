@@ -11,19 +11,43 @@ static SelectMenu *s_select_menu;
 
 #define MAX_DATA    (50)
 
-static void s_select_menu_select_callback(SelectMenuElement element) {
+static void s_select_menu_select_callback(SelectMenuElementID id, SelectMenuElement element, MultiAlarmData *data, index_t index) {    
+    switch (id) {
+    case SME_Enable:
+        (void)multi_alarm_data_set_alarm_enable(data, index, element.enable.enable);
+        multi_alarm_layer_mark_dirty(s_malarm_layer);
+        break;
+    case SME_Edit:
+        (void)multi_alarm_data_set_MATime(data, index, element.edit.time);
+        multi_alarm_data_sort_by_ascending_order(s_malarm_data);
+        multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
+        multi_alarm_layer_set_data_index_correspond_to_time(s_malarm_layer, element.edit.time);
+        break;
+    case SME_Delete:
+        multi_alarm_data_delete(data, index);
+        multi_alarm_data_sort_by_ascending_order(s_malarm_data);
+        multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
+        multi_alarm_layer_set_data_index(s_malarm_layer, index == 0 ? 0 : (index - 1));
+        break;
+    }
     vibes_short_pulse();
 }
 
 static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
     if (index == MA_INDEX_INVALID) {
         vibes_short_pulse();
+    } else {
+        bool enable = false;
+        if (multi_alarm_data_get_alarm_enable(data, index, &enable) == 0) {
+            (void)multi_alarm_data_set_alarm_enable(data, index, enable == true ? false : true);
+            multi_alarm_layer_mark_dirty(s_malarm_layer);
+        }
     }
 }
     
 static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t index) {
     if (index != MA_INDEX_INVALID) {
-        select_menu_show(s_select_menu, s_select_menu_select_callback);
+        select_menu_show(s_select_menu, s_select_menu_select_callback, data, index);
     }
 }
 

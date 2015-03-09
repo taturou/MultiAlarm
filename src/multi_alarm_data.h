@@ -29,3 +29,5 @@ err_t multi_alarm_data_set_MATime(MultiAlarmData *data, index_t index, MATime ti
 err_t multi_alarm_data_get_alarm_enable(const MultiAlarmData *data, index_t index, bool *enable);
 err_t multi_alarm_data_set_alarm_enable(MultiAlarmData *data, index_t index, bool enable);
 index_t multi_alarm_data_get_index_near_now(const MultiAlarmData *data);
+
+#define MATimeEq(a, b)    (((a.hour) == (b.hour)) && ((a.min) == (b.min)))

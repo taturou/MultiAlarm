@@ -21,20 +21,32 @@ static void s_select_menu_select_callback(SelectMenuElementID id, SelectMenuElem
         (void)multi_alarm_data_set_MATime(data, index, element.edit.time);
         multi_alarm_data_sort_by_ascending_order(s_malarm_data);
         multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
-        multi_alarm_layer_set_data_index_correspond_to_time(s_malarm_layer, element.edit.time);
+        index = multi_alarm_data_get_index_to_MATime(data, element.edit.time);
+        multi_alarm_layer_set_data_index(s_malarm_layer, index);
+        break;
+    case SME_Add:
+        if (multi_alarm_data_add(s_malarm_data, &index) == 0) {
+            (void)multi_alarm_data_set_MATime(s_malarm_data, index, element.add.time);
+            multi_alarm_data_sort_by_ascending_order(s_malarm_data);
+            multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
+            index = multi_alarm_data_get_index_to_MATime(data, element.edit.time);
+            multi_alarm_layer_set_data_index(s_malarm_layer, index);
+        }
         break;
     case SME_Delete:
         multi_alarm_data_delete(data, index);
         multi_alarm_data_sort_by_ascending_order(s_malarm_data);
         multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
         multi_alarm_layer_set_data_index(s_malarm_layer, index == 0 ? 0 : (index - 1));
+        vibes_short_pulse();
         break;
     }
-    vibes_short_pulse();
 }
 
 static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
     if (index == MA_INDEX_INVALID) {
+        //@@@
+        s_select_menu_select_callback(SME_Add, (SelectMenuElement){.add = {.time = {.hour = 23, .min = 59}}}, s_malarm_data, MA_INDEX_INVALID);
         vibes_short_pulse();
     } else {
         bool enable = false;

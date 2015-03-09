@@ -7,10 +7,11 @@ typedef struct select_menu SelectMenu;
 typedef enum select_menu_element {
     SME_Enable = 0,
     SME_Edit,
-    SME_Delete
+    SME_Delete,
+    SME_Add
     // You have to modify 'MAX_SELECT_MENU_ELEMENT' value.
 } SelectMenuElementID;
-#define MAX_SELECT_MENU_ELEMENT  ((int)SME_Delete + 1)
+#define MAX_SELECT_MENU_ELEMENT  ((int)SME_Add + 1)
 
 typedef union select_menu_data {
     struct {
@@ -22,6 +23,9 @@ typedef union select_menu_data {
     struct {
         int dummy;
     } delete;
+    struct {
+        MATime time;
+    } add;
 } SelectMenuElement;
 
 typedef void (*SelectMenuSelectCallback)(SelectMenuElementID id, SelectMenuElement element, MultiAlarmData *data, index_t index);

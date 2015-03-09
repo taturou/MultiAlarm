@@ -144,16 +144,32 @@ err_t multi_alarm_data_set_alarm_enable(MultiAlarmData *data, index_t index, boo
 
 index_t multi_alarm_data_get_index_near_now(const MultiAlarmData *data) {
     index_t index = 0;
-    size_t num_usable = multi_alarm_data_get_num_usable(data);
+    size_t num_element = multi_alarm_data_get_num_max(data);
     time_t old = 0, new;
 
-    for (index_t i = 0; i < num_usable; i++) {
+    for (index_t i = 0; i < num_element; i++) {
         if (multi_alarm_data_get_time_t_of_after24h(data, i, &new) == 0) {
             if (old > new) {
                 index = i;
                 break;
             }
             old = new;
+        }
+    }
+    return index;
+}
+
+index_t multi_alarm_data_get_index_to_MATime(const MultiAlarmData *data, MATime tim) {
+    index_t index = MA_INDEX_INVALID;
+    size_t num_element = multi_alarm_data_get_num_max(data);
+    MATime new;
+
+    for (index_t i = 0; i < num_element; i++) {
+        if (multi_alarm_data_get_MATime(data, i, &new) == 0) {
+            if (MATimeEq(tim, new)) {
+                index = i;
+                break;
+            }
         }
     }
     return index;

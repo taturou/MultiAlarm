@@ -167,21 +167,6 @@ void multi_alarm_layer_set_data_index(MultiAlarmLayer *malarm, index_t index) {
     menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
 }
 
-void multi_alarm_layer_set_data_index_correspond_to_time(MultiAlarmLayer *malarm, MATime tim) {
-    index_t index = 0;
-    MATime tim_of_index;
-
-    for (index_t i = 0; i < multi_alarm_data_get_num_usable(malarm->data); i++) {
-        if (multi_alarm_data_get_MATime(malarm->data, i, &tim_of_index) == 0) {
-            if (MATimeEq(tim, tim_of_index)) {
-                index = i;
-                break;
-            }
-        }
-    }
-    menu_layer_set_selected_index(malarm->menu_layer, (MenuIndex){0, index}, MenuRowAlignCenter, true);
-}
-
 void multi_alarm_layer_update_abouttime(MultiAlarmLayer *malarm) {
     MenuIndex cell_index = menu_layer_get_selected_index(malarm->menu_layer);
 
@@ -251,13 +236,7 @@ static void s_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer, Men
     } else {
         GPoint center = (GPoint){MENU_BOUNDS_SIZE_WIDTH / 2, MENU_CELL_HIGHT_SETTING / 2};
 
-        graphics_context_set_fill_color(ctx, GColorBlack);
-        graphics_fill_rect(ctx,
-                           (GRect){.origin = {center.x - 8, center.y - 8}, .size = {17, 17}},
-                           0,
-                           GCornerNone);
-        
-        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_context_set_stroke_color(ctx, GColorBlack);
         graphics_draw_line(ctx,
                            (GPoint){center.x, center.y - 4},
                            (GPoint){center.x, center.y + 4});

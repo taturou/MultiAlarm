@@ -2,7 +2,7 @@
 #include "select_menu.h"
 
 #define NUM_MENU_SECTIONS       (1)
-#define NUM_MENU_SECTION1_ROWS  (MAX_SELECT_MENU_ELEMENT)
+#define NUM_MENU_SECTION1_ROWS  (MAX_SELECT_MENU_ELEMENT - 1) // SMEAdd is not necessary
 
 #define MENU_BOUNDS_SIZE_WIDTH  (50) 
 

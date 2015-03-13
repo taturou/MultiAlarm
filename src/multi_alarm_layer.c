@@ -322,8 +322,8 @@ static void s_menu_data_alarm_update(const Layer *layer, GContext *ctx, MultiAla
             ctx,
             s_icons[key].bitmap,
             (GRect){
-                .origin = {INFO_ALARM_ORIGIN_X, (MENU_CELL_HIGHT_TIME / 2) - (s_icons[key].bitmap->bounds.size.h / 2)},
-                .size = s_icons[key].bitmap->bounds.size});
+                .origin = {INFO_ALARM_ORIGIN_X, (MENU_CELL_HIGHT_TIME / 2) - (gbitmap_get_bounds(s_icons[key].bitmap).size.h / 2)},
+                .size = gbitmap_get_bounds(s_icons[key].bitmap).size});
     }
 }
 

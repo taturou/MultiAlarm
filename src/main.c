@@ -2,24 +2,24 @@
 #include "PDUtils.h"
 #include "multi_alarm_layer.h"
 #include "multi_alarm_data.h"
-#include "select_menu.h"
+#include "multi_alarm_data_operation_window.h"
 #include "time_select_window.h"
 
 static Window *s_window;
 static MultiAlarmLayer *s_malarm_layer;
 static MultiAlarmData *s_malarm_data;
-static SelectMenu *s_select_menu;
+static MultiAlarmDataOperationWindow *s_malarm_ope_window;
 static TimeSelectWindow *s_tselect_window;
 
 #define MAX_DATA    (50)
 
-static void s_select_menu_select_callback(SelectMenuElementID id, SelectMenuElement element, MultiAlarmData *data, index_t index) {
+static void s_select_menu_select_callback(MultiAlarmDataOperationElementID id, MultiAlarmDataOperationElement element, MultiAlarmData *data, index_t index) {
     switch (id) {
-    case SME_Enable:
+    case MADOE_Enable:
         (void)multi_alarm_data_set_alarm_enable(data, index, element.enable.enable);
         multi_alarm_layer_mark_dirty(s_malarm_layer);
         break;
-    case SME_Edit:
+    case MADOE_Edit:
         {
             index_t exist_index = multi_alarm_data_get_index_to_MATime(data, element.edit.time);
             if (exist_index == MA_INDEX_INVALID) {
@@ -33,7 +33,7 @@ static void s_select_menu_select_callback(SelectMenuElementID id, SelectMenuElem
             }
         }
         break;
-    case SME_Add:
+    case MADOE_Add:
         {
             index_t exist_index = multi_alarm_data_get_index_to_MATime(data, element.add.time);
             if (exist_index == MA_INDEX_INVALID) {
@@ -49,7 +49,7 @@ static void s_select_menu_select_callback(SelectMenuElementID id, SelectMenuElem
             }
         }
         break;
-    case SME_Delete:
+    case MADOE_Delete:
         multi_alarm_data_delete(data, index);
         multi_alarm_data_sort_by_ascending_order(s_malarm_data);
         multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
@@ -58,10 +58,10 @@ static void s_select_menu_select_callback(SelectMenuElementID id, SelectMenuElem
     }
 }
 
-static void s_time_select_window_callback(MATime tim) {
-    SelectMenuElement element;
+static void s_time_select_window_callback(MATime tim, void *data) {
+    MultiAlarmDataOperationElement element;
     element.add.time = tim;
-    s_select_menu_select_callback(SME_Add, element, s_malarm_data, MA_INDEX_INVALID);
+    s_select_menu_select_callback(MADOE_Add, element, s_malarm_data, MA_INDEX_INVALID);
 }
 
 static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
@@ -73,16 +73,16 @@ static void s_multi_alarm_select_callback(MultiAlarmData *data, index_t index) {
         }
     } else {
         MATime tim = {0, 0};
-        time_select_window_show(s_tselect_window, s_time_select_window_callback, tim);
+        s_tselect_window = time_select_window_create(s_time_select_window_callback, tim, NULL);
     }
 }
 
 static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t index) {
     if (index != MA_INDEX_INVALID) {
-        select_menu_show(s_select_menu, s_select_menu_select_callback, data, index);
+        multi_alarm_data_operation_window_show(s_malarm_ope_window, s_select_menu_select_callback, data, index);
     } else {
         MATime tim = {0, 0};
-        time_select_window_show(s_tselect_window, s_time_select_window_callback, tim);
+        s_tselect_window = time_select_window_create(s_time_select_window_callback, tim, NULL);
     }
 }
 
@@ -120,15 +120,13 @@ void window_load(Window *window) {
     multi_alarm_layer_set_data_pointer(s_malarm_layer, s_malarm_data);
     multi_alarm_layer_set_data_index(s_malarm_layer, MA_INDEX_NEAR_NOW_TIME);
 
-    s_select_menu = select_menu_create();
-    s_tselect_window = time_select_window_create();
+    s_malarm_ope_window = multi_alarm_data_operation_window_create();
 
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }
 
 void window_unload(Window *window) {
-    time_select_window_destroy(s_tselect_window);
-    select_menu_destroy(s_select_menu);
+    multi_alarm_data_operation_window_destroy(s_malarm_ope_window);
     multi_alarm_layer_destroy(s_malarm_layer);
     multi_alarm_data_destory(s_malarm_data);
 }

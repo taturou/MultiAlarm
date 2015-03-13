@@ -20,8 +20,12 @@
             }
         ]
     },
-    "sdkVersion": "2",
+    "sdkVersion": "3",
     "shortName": "MultiAlarm",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
     "uuid": "0d3a4c5c-e6e7-4505-b72e-f33ce5bfa74a",
     "versionCode": 1,
     "versionLabel": "1.0",

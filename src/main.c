@@ -97,7 +97,7 @@ static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t ind
     }
 #endif
     s_mawindow = multi_alarm_window_create();
-    multi_alarm_window_show(s_mawindow, true);
+    multi_alarm_window_show(s_mawindow);
 }
 
 static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {
@@ -151,7 +151,7 @@ void window_unload(Window *window) {
 
 int main(void) {
     s_window = window_create();
-    window_set_fullscreen(s_window, true);
+    window_set_fullscreen(s_window, false);
 
     window_set_window_handlers(s_window, (WindowHandlers) {
         .load = window_load,

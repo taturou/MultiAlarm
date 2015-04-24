@@ -96,7 +96,7 @@ static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t ind
         s_tselect_window = time_select_window_create(s_time_select_window_callback, tim, NULL);
     }
 #endif
-    s_mawindow = multi_alarm_window_create();
+    s_mawindow = multi_alarm_window_create(s_window);
     multi_alarm_window_show(s_mawindow);
 }
 
@@ -104,7 +104,7 @@ static void s_malarm_update(struct tm *tick_time, TimeUnits units_changed) {
     multi_alarm_layer_update_abouttime(s_malayer);
 }
 
-void window_load(Window *window) {
+void s_window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
     GRect window_frame = layer_get_frame(window_layer);
 
@@ -136,12 +136,19 @@ void window_load(Window *window) {
 
 #if 0 // not use multi_alarm_data_operation_window
     s_malarm_ope_window = multi_alarm_data_operation_window_create();
+#else
+    s_mawindow = NULL;
 #endif
 
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
 }
 
-void window_unload(Window *window) {
+void s_window_appear(Window *window) {
+    multi_alarm_window_destroy(s_mawindow);
+    s_mawindow = NULL;
+}
+
+void s_window_unload(Window *window) {
 #if 0 // not use multi_alarm_data_operation_window
     multi_alarm_data_operation_window_destroy(s_malarm_ope_window);
 #endif
@@ -154,8 +161,9 @@ int main(void) {
     window_set_fullscreen(s_window, false);
 
     window_set_window_handlers(s_window, (WindowHandlers) {
-        .load = window_load,
-        .unload = window_unload,
+        .load = s_window_load,
+        .appear = s_window_appear,
+        .unload = s_window_unload,
     });
 
     window_stack_push(s_window, true /* Animated */);

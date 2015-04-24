@@ -3,7 +3,7 @@
 
 typedef struct multi_alarm_windows MultiAlarmWindow;
 
-MultiAlarmWindow *multi_alarm_window_create(void);
+MultiAlarmWindow *multi_alarm_window_create(Window *parent_window);
 void multi_alarm_window_destroy(MultiAlarmWindow *mawindow);
 void multi_alarm_window_show(MultiAlarmWindow *mawindow);
 void multi_alarm_window_hide(MultiAlarmWindow *mawindow);

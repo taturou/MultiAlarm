@@ -15,7 +15,6 @@ static MultiAlarmData *s_madata;
 static MultiAlarmDataOperationWindow *s_malarm_ope_window;
 static TimeSelectWindow *s_tselect_window;
 #endif
-static MultiAlarmWindow *s_mawindow;
     
 #define MAX_DATA    (50)
 
@@ -96,7 +95,7 @@ static void s_multi_alarm_long_select_callback(MultiAlarmData *data, index_t ind
         s_tselect_window = time_select_window_create(s_time_select_window_callback, tim, NULL);
     }
 #endif
-    s_mawindow = multi_alarm_window_create(s_window);
+    MultiAlarmWindow *s_mawindow = multi_alarm_window_create(s_window);
     multi_alarm_window_show(s_mawindow);
 }
 
@@ -136,16 +135,9 @@ void s_window_load(Window *window) {
 
 #if 0 // not use multi_alarm_data_operation_window
     s_malarm_ope_window = multi_alarm_data_operation_window_create();
-#else
-    s_mawindow = NULL;
 #endif
 
     tick_timer_service_subscribe(SECOND_UNIT, s_malarm_update);
-}
-
-void s_window_appear(Window *window) {
-    multi_alarm_window_destroy(s_mawindow);
-    s_mawindow = NULL;
 }
 
 void s_window_unload(Window *window) {
@@ -162,7 +154,6 @@ int main(void) {
 
     window_set_window_handlers(s_window, (WindowHandlers) {
         .load = s_window_load,
-        .appear = s_window_appear,
         .unload = s_window_unload,
     });
 
